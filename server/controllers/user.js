@@ -1,6 +1,9 @@
 const { errorResponse, sucessResponse } = require('../helper/responseHelper')
 const { securePassword, comparePassword } = require('../helper/securePassword')
+var jwt = require('jsonwebtoken')
+
 const User = require('../models/users')
+const dev = require('../config')
 
 //register user
 const registerUser = async (req, res) => {
@@ -43,13 +46,13 @@ const registerUser = async (req, res) => {
     if (!user) {
       return errorResponse(res, 400, 'user not created')
     }
-//sending custom data
+    //sending custom data
     const userinfo = {
-        id: user._id,
-        name: user.name,
+      id: user._id,
+      name: user.name,
     }
     //if everything is sucessfull send data
-    sucessResponse(res, 201, 'user created', userinfo)
+    sucessResponse(res, 201, 'user created')
   } catch (error) {
     return res.status(500).send({
       message: error.message,
@@ -57,51 +60,80 @@ const registerUser = async (req, res) => {
   }
 }
 
-
 //login user
-const login = async(req, res)=>{
-    try{
-      const {  email, password } = req.body
-      if ( !email || !password ) {
-        //calling function which bacially handlee error
-        return errorResponse(
-          res,
-          400,
-          'please provide  email, password '
-        )
-      }
-
-      const userData = await User.findOne({email:email})
-      if(userData){
-        const isMatched = await comparePassword(password, userData.password);
-        if(isMatched){
-          //sending custom data
-    const userinfo = {
-      id: userData._id,
-      name: userData.name,
-      email: userData.email,
-
-  }
-          return sucessResponse(res, 200, "user login", userinfo)
-        }else{
-          return errorResponse(res,404,"invalid email and password")
-         
-        }
-      }else{
-        return errorResponse(res,404,"user with email and password doesnt exist")
-
-      }
-
-
+const login = async (req, res) => {
+  try {
+    const { email, password } = req.body
+    if (!email || !password) {
+      //calling function which bacially handlee error
+      return errorResponse(res, 400, 'please provide  email, password ')
     }
-    catch(error){
-        res.status(500).send({
-            message: error.message
+
+    const userData = await User.findOne({ email: email })
+    if (userData) {
+      const isMatched = await comparePassword(password, userData.password)
+      if (isMatched) {
+        //sending custom data
+        // const userinfo = {
+        //   id: userData._id,
+        //   name: userData.name,
+        //   email: userData.email,
+        // }
+
+        //generate JWT
+        const token = jwt.sign({ id: userData._id }, String(dev.app.jwtKey), {
+          //  algorithm: 'RS256',
+          expiresIn: '40s',
         })
+
+        //send token inside cookie: first is name of the cookie and what we want to send value:token
+        res.cookie(String(userData._id), token, {
+          path: '/',
+          expires: new Date(Date.now() + 1000 * 38),
+          httpOnly: true,
+          sameSite: 'lax',
+        })
+
+        return sucessResponse(res, 200, 'user login', token)
+      } else {
+        return errorResponse(res, 404, 'invalid email and password')
+      }
+    } else {
+      return errorResponse(
+        res,
+        404,
+        'user with email and password doesnt exist'
+      )
     }
+  } catch (error) {
+    return res.status(404).send({
+      message: 'error.message',
+    })
+  }
 }
 
 
+const userProfile = async (req, res) => {
+  try {
+    // console.log(req.headers.cookie)
+    //matching _id from db and req.id which we get from middleware i.e. declared from decoded 
+    const user = await User.findOne({_id:req.id}, {password:0})
+    if(!user){
+      return res.status(404).send({
+        message: 'no cookie found. You need to login',
+      })
+    }
 
 
-module.exports = { registerUser,login }
+    res.status(200).json({
+      message: "user info returned",
+      user,
+    })
+  } catch (error) {
+    res.status(500).send({
+      message: error.message,
+    })
+  }
+}
+
+module.exports = { registerUser, login, userProfile }
