@@ -112,21 +112,19 @@ const login = async (req, res) => {
   }
 }
 
-
 const userProfile = async (req, res) => {
   try {
     // console.log(req.headers.cookie)
-    //matching _id from db and req.id which we get from middleware i.e. declared from decoded 
-    const user = await User.findOne({_id:req.id}, {password:0})
-    if(!user){
+    //matching _id from db and req.id which we get from middleware i.e. declared from decoded
+    const user = await User.findOne({ _id: req.id }, { password: 0 })
+    if (!user) {
       return res.status(404).send({
         message: 'no cookie found. You need to login',
       })
     }
 
-
     res.status(200).json({
-      message: "user info returned",
+      message: 'user info returned',
       user,
     })
   } catch (error) {
@@ -136,4 +134,40 @@ const userProfile = async (req, res) => {
   }
 }
 
-module.exports = { registerUser, login, userProfile }
+//logout user
+const userLogout = async (req, res) => {
+  try {
+    if (!req.headers.cookie) {
+      return res.status(404).send({
+        message: 'no cookie found. You need to login',
+      })
+    }
+    //spliting token from cookie inside header. in cookie there is id and token. id=token (we are spliting token and saving)
+    const token = req.headers.cookie.split('=')[1]
+    if (!token) {
+      return res.status(404).send({
+        message: 'no token found',
+      })
+    }
+
+    //verify the cookie
+    jwt.verify(token, dev.app.jwtKey, function (err, decoded) {
+      if (err) {
+        console.log(err)
+      }
+      console.log(decoded)
+      res.clearCookie(`${decoded.id}`)
+    })
+     res.status(200).json({
+      message: 'user is logged out',
+    })
+  
+
+  } catch (error) {
+    res.status(500).send({
+      message: error.message,
+    })
+  }
+}
+
+module.exports = { registerUser, login, userProfile, userLogout }

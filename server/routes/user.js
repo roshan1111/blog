@@ -1,6 +1,6 @@
 const bodyParser = require('body-parser')
 const express = require('express')
-const { registerUser, login, userProfile } = require('../controllers/user')
+const { registerUser, login, userProfile, userLogout } = require('../controllers/user')
 const { registerUserValidator } = require('../validator/user')
 //to use two local port i.e. frontend and server
 const cors = require('cors')
@@ -32,6 +32,8 @@ userRoute.post('/register', registerUserValidator, registerUser)
 
 userRoute.post('/login', login)
 userRoute.get('/profile', isAuthorized, userProfile)
+userRoute.post('/logout', userLogout)
+
 
 
 module.exports = userRoute
