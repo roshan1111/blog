@@ -6,7 +6,7 @@ const { registerUserValidator } = require('../validator/user')
 const cors = require('cors')
 //cookie parser
 var cookieParser = require('cookie-parser')
-const { isAuthorized } = require('../middlewares/tokenAut')
+const { isAuthorized,getRefreshToken } = require('../middlewares/tokenAut')
 
 const userRoute = express()
 
@@ -32,6 +32,7 @@ userRoute.post('/register', registerUserValidator, registerUser)
 
 userRoute.post('/login', login)
 userRoute.get('/profile', isAuthorized, userProfile)
+userRoute.get('/refresh',getRefreshToken, isAuthorized, userProfile)
 userRoute.post('/logout', userLogout)
 
 

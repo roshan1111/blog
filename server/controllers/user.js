@@ -83,13 +83,17 @@ const login = async (req, res) => {
         //generate JWT
         const token = jwt.sign({ id: userData._id }, String(dev.app.jwtKey), {
           //  algorithm: 'RS256',
-          expiresIn: '40s',
+          expiresIn: '38s',
         })
 
+        // clear the exisiting cookie with the same id
+        if (req.cookies[`${userData._id}`]) {
+          req.cookies[`${userData._id}`] = ''
+        }
         //send token inside cookie: first is name of the cookie and what we want to send value:token
         res.cookie(String(userData._id), token, {
           path: '/',
-          expires: new Date(Date.now() + 1000 * 38),
+          expires: new Date(Date.now() + 1000 * 60 * 5),
           httpOnly: true,
           sameSite: 'lax',
         })
@@ -158,11 +162,9 @@ const userLogout = async (req, res) => {
       console.log(decoded)
       res.clearCookie(`${decoded.id}`)
     })
-     res.status(200).json({
+    res.status(200).json({
       message: 'user is logged out',
     })
-  
-
   } catch (error) {
     res.status(500).send({
       message: error.message,

@@ -24,11 +24,11 @@ app.listen(port, async () => {
   //calling database function we have created on config->db
   await connectDB()
 })
-
-//use user Route
-app.use('/api/users', userRoute)
 //to see request on console
 app.use(morgan('dev'))
+//use user Route
+app.use('/api/users', userRoute)
+
 
 
 //add middleware for client error handling
